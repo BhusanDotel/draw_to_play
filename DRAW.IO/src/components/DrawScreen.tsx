@@ -65,7 +65,7 @@ export const DrawScreen = () => {
     }, 500);
   };
 
-  const hitApi = async (savedData: string) => {
+  const hitApi = async (savedData: string | null) => {
     await axios.post(`${host}/api/sync-canvas`, {
       savedData,
     });
@@ -74,6 +74,10 @@ export const DrawScreen = () => {
   useEffect(() => {
     socket.on("syncData", (savedData: { blob: string }) => {
       const savedImage = savedData?.blob;
+      if (!savedImage) {
+        clearCanvas();
+        return;
+      }
       loadDrawing(savedImage);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -89,6 +93,19 @@ export const DrawScreen = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0);
       };
+    }
+  };
+
+  const handleClearCanvas = () => {
+    clearCanvas();
+    hitApi(null);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvasCTXRef.current;
+    if (ctx && canvas) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
   };
 
@@ -117,17 +134,7 @@ export const DrawScreen = () => {
           value={color}
           onChange={(e) => setColor(e.target.value)}
         />
-        <button
-          onClick={() => {
-            const canvas = canvasRef.current;
-            const ctx = canvasCTXRef.current;
-            if (ctx && canvas) {
-              ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-            }
-          }}
-        >
-          Clear
-        </button>
+        <button onClick={handleClearCanvas}>Clear</button>
       </div>
     </div>
   );
