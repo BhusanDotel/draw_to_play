@@ -1,0 +1,120 @@
+import axios from "axios";
+import { useEffect, useRef, useState } from "react";
+
+import io from "socket.io-client";
+const host: string = "http://localhost:3000";
+const socket = io(host);
+
+export const DrawScreen = () => {
+  const mouseDataRef = useRef({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [color, setColor] = useState<string>("#000000");
+  const [size, setSize] = useState<number>(10);
+  const canvasCTXRef = useRef<CanvasRenderingContext2D | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        canvasCTXRef.current = ctx;
+      }
+    }
+  }, []);
+
+  // Set mouse position
+  const SetPos = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const nativeEvent = e.nativeEvent;
+    mouseDataRef.current = {
+      x: nativeEvent.clientX,
+      y: nativeEvent.clientY,
+    };
+  };
+
+  let saveTimeout: number;
+  // Draw on canvas
+  const Draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (e.buttons !== 1) return;
+
+    const nativeEvent = e.nativeEvent;
+    const ctx = canvasCTXRef.current;
+    if (!ctx) return;
+
+    // Draw the line
+    ctx.beginPath();
+    ctx.moveTo(mouseDataRef.current.x, mouseDataRef.current.y);
+    mouseDataRef.current = { x: nativeEvent.clientX, y: nativeEvent.clientY };
+    ctx.lineTo(nativeEvent.clientX, nativeEvent.clientY);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = size;
+    ctx.lineCap = "round";
+    ctx.stroke();
+
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+
+    saveTimeout = window.setTimeout(() => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const savedData = canvas.toDataURL("image/png");
+        hitApi(savedData);
+      }
+    }, 500);
+  };
+
+  const hitApi = async (savedData: string) => {
+    await axios.post(`${host}/api/sync-canvas`, {
+      savedData,
+    });
+  };
+
+  useEffect(() => {
+    socket.on("savedData", (savedData: { message: string }) => {
+      console.log("savedData", savedData?.message);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket]);
+
+  return (
+    <div>
+      <div className={`w-[500px] h-[500px] overflow-hidden border-[2px]`}>
+        <canvas
+          ref={canvasRef}
+          onMouseMove={(e) => Draw(e)}
+          onMouseDown={(e) => SetPos(e)}
+        ></canvas>
+      </div>
+
+      {/* Control panel */}
+      <div className="w-full">
+        <input
+          type="range"
+          value={size}
+          max={40}
+          onChange={(e) => {
+            setSize(Number(e.target.value));
+          }}
+        />
+        <input
+          type="color"
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+        />
+        <button
+          onClick={() => {
+            const canvas = canvasRef.current;
+            const ctx = canvasCTXRef.current;
+            if (ctx && canvas) {
+              ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            }
+          }}
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+  );
+};
