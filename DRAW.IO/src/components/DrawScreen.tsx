@@ -72,11 +72,25 @@ export const DrawScreen = () => {
   };
 
   useEffect(() => {
-    socket.on("savedData", (savedData: { message: string }) => {
-      console.log("savedData", savedData?.message);
+    socket.on("syncData", (savedData: { blob: string }) => {
+      const savedImage = savedData?.blob;
+      loadDrawing(savedImage);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket]);
+
+  const loadDrawing = (savedImage: string) => {
+    const canvas = canvasRef.current;
+    const ctx = canvasCTXRef.current;
+    if (canvas && ctx && savedImage) {
+      const img = new Image();
+      img.src = savedImage;
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+    }
+  };
 
   return (
     <div>
