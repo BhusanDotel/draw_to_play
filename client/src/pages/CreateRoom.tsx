@@ -1,32 +1,30 @@
-import axios from "axios";
 import { toast } from "react-toastify";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Box, Button, TextField } from "@mui/material";
 
 import { generateRandomAlphanumeric } from "../utils/generateRandomStrings";
-import { hostURL, myBaseURL } from "../utils/apiRoutes";
+
+import { useCreateRoomMutation } from "../Queries/roomApi";
 
 export const CreateRoom: React.FC = () => {
   const [name, setName] = useState<string>("");
-  const [roomID, setRoomID] = useState<string>("");
 
   const randomNumber = useMemo(() => {
     return generateRandomAlphanumeric();
   }, []);
 
-  const createRoom = async () => {
-    await axios
-      .post(`${hostURL}/api/room`, {
-        name,
-        playerUId: randomNumber,
-      })
-      .then((res) => {
-        setRoomID(`${myBaseURL}/room/${res?.data?._id}/playground`);
-      })
-      .catch((e) => {
-        toast.error(e?.response?.data?.message ?? "Something went wrong");
-      });
-  };
+  const [createRoom, { data: Response, isLoading, error }] =
+    useCreateRoomMutation();
+
+  const roomID = useMemo(() => {
+    if (!Response) return null;
+    return `${window.location.href}room/${Response?._id}/playground`;
+  }, [Response]);
+
+  useEffect(() => {
+    if (!error) return;
+    toast.error("Error creating room");
+  }, [error]);
 
   return (
     <Box className="flex justify-center mt-10">
@@ -44,8 +42,17 @@ export const CreateRoom: React.FC = () => {
           </Box>
         </Box>
         <Box className="flex justify-center items-center">
-          <Button disabled={!name} variant="contained" onClick={createRoom}>
-            Create
+          <Button
+            disabled={!name || isLoading}
+            variant="contained"
+            onClick={async () => {
+              await createRoom({
+                name,
+                playerUId: randomNumber,
+              });
+            }}
+          >
+            {isLoading ? "Creating..." : "Create"}
           </Button>
         </Box>
 
