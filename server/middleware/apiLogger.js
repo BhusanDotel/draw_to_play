@@ -1,6 +1,6 @@
 import chalk from "chalk";
 
-export const loggerMiddleware = (req, res, next) => {
+export const API_LOGGER = (req, res, next) => {
   const start = Date.now();
 
   res.on("finish", () => {
