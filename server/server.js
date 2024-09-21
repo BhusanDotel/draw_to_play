@@ -3,9 +3,11 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import http from "http";
 
-import { initSocket } from "./socketService.js";
-import canvasRoute from "./routes/canvasRoute.js";
 import connectDB from "./db.js";
+import { initSocket } from "./socketService.js";
+
+import canvasRoute from "./routes/canvasRoute.js";
+import roomRoute from "./routes/roomRoute.js";
 
 const app = express();
 
@@ -19,7 +21,8 @@ const server = http.createServer(app);
 
 initSocket(server);
 
-app.use("/api", canvasRoute);
+app.use("/api/canvas", canvasRoute);
+app.use("/api/room", roomRoute);
 
 server.listen(3000, () => {
   console.log("App listening on port 3000!");

@@ -66,7 +66,7 @@ export const DrawScreen = () => {
   };
 
   const hitApi = async (savedData: string | null) => {
-    await axios.post(`${host}/api/sync-canvas`, {
+    await axios.post(`${host}/api/canvas/sync`, {
       savedData,
     });
   };
