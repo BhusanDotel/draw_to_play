@@ -1,14 +1,18 @@
 import axios from "axios";
+import io from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
 import { Box } from "@mui/material";
 
-import io from "socket.io-client";
-const host: string = "http://localhost:3000";
-const socket = io(host);
+import { hostURL } from "../utils/apiRoutes";
+
+const socket = io(hostURL);
+
+const canvasSize = {
+  width: 500,
+  height: 500,
+};
 
 export const DrawScreen = () => {
-  const { id } = useParams();
   const mouseDataRef = useRef({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [color, setColor] = useState<string>("#000000");
@@ -20,36 +24,45 @@ export const DrawScreen = () => {
     if (canvas) {
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        // Set canvas dimensions to 500px by 500px
+        canvas.width = canvasSize?.width;
+        canvas.height = canvasSize?.height;
         canvasCTXRef.current = ctx;
       }
     }
   }, []);
 
-  // Set mouse position
+  // Adjusted SetPos function to account for canvas position
   const SetPos = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const nativeEvent = e.nativeEvent;
-    mouseDataRef.current = {
-      x: nativeEvent.clientX,
-      y: nativeEvent.clientY,
-    };
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+      mouseDataRef.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+    }
   };
 
   let saveTimeout: number;
-  // Draw on canvas
+
+  // Adjusted Draw function to account for canvas position
   const Draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (e.buttons !== 1) return;
 
-    const nativeEvent = e.nativeEvent;
+    const canvas = canvasRef.current;
     const ctx = canvasCTXRef.current;
-    if (!ctx) return;
+    if (!ctx || !canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
     // Draw the line
     ctx.beginPath();
     ctx.moveTo(mouseDataRef.current.x, mouseDataRef.current.y);
-    mouseDataRef.current = { x: nativeEvent.clientX, y: nativeEvent.clientY };
-    ctx.lineTo(nativeEvent.clientX, nativeEvent.clientY);
+    mouseDataRef.current = { x: mouseX, y: mouseY };
+    ctx.lineTo(mouseX, mouseY);
     ctx.strokeStyle = color;
     ctx.lineWidth = size;
     ctx.lineCap = "round";
@@ -62,15 +75,15 @@ export const DrawScreen = () => {
     saveTimeout = window.setTimeout(() => {
       const canvas = canvasRef.current;
       if (canvas) {
-        const savedData = canvas.toDataURL("image/png");
-        hitApi(savedData);
+        const blob = canvas.toDataURL("image/png");
+        hitApi(blob);
       }
     }, 500);
   };
 
-  const hitApi = async (savedData: string | null) => {
-    await axios.post(`${host}/api/canvas/sync`, {
-      savedData,
+  const hitApi = async (blob: string | null) => {
+    await axios.post(`${hostURL}/api/canvas/sync`, {
+      blob,
     });
   };
 
@@ -81,6 +94,8 @@ export const DrawScreen = () => {
         clearCanvas();
         return;
       }
+
+      console.log("savedData", savedData);
       loadDrawing(savedImage);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -114,7 +129,9 @@ export const DrawScreen = () => {
 
   return (
     <Box>
-      <Box className={`w-[500px] h-[500px] overflow-hidden border-[2px]`}>
+      <Box
+        className={`w-[${canvasSize?.width}px] h-[${canvasSize?.height}px] overflow-hidden border-[2px] bg-green-100`}
+      >
         <canvas
           ref={canvasRef}
           onMouseMove={(e) => Draw(e)}
@@ -139,7 +156,6 @@ export const DrawScreen = () => {
         />
         <button onClick={handleClearCanvas}>Clear</button>
       </Box>
-      <Box>{id}</Box>
     </Box>
   );
 };
