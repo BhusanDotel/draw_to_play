@@ -5,6 +5,7 @@ import http from "http";
 
 import connectDB from "./db.js";
 import { initSocket } from "./socketService.js";
+import { loggerMiddleware } from "./loggerMiddleware.js";
 
 import canvasRoute from "./routes/canvasRoute.js";
 import roomRoute from "./routes/roomRoute.js";
@@ -20,6 +21,8 @@ connectDB();
 const server = http.createServer(app);
 
 initSocket(server);
+
+app.use(loggerMiddleware);
 
 app.use("/api/canvas", canvasRoute);
 app.use("/api/room", roomRoute);

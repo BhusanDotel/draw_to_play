@@ -1,11 +1,14 @@
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Box } from "@mui/material";
 
 import io from "socket.io-client";
 const host: string = "http://localhost:3000";
 const socket = io(host);
 
 export const DrawScreen = () => {
+  const { id } = useParams();
   const mouseDataRef = useRef({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [color, setColor] = useState<string>("#000000");
@@ -110,17 +113,17 @@ export const DrawScreen = () => {
   };
 
   return (
-    <div>
-      <div className={`w-[500px] h-[500px] overflow-hidden border-[2px]`}>
+    <Box>
+      <Box className={`w-[500px] h-[500px] overflow-hidden border-[2px]`}>
         <canvas
           ref={canvasRef}
           onMouseMove={(e) => Draw(e)}
           onMouseDown={(e) => SetPos(e)}
         ></canvas>
-      </div>
+      </Box>
 
       {/* Control panel */}
-      <div className="w-full">
+      <Box className="w-full">
         <input
           type="range"
           value={size}
@@ -135,7 +138,8 @@ export const DrawScreen = () => {
           onChange={(e) => setColor(e.target.value)}
         />
         <button onClick={handleClearCanvas}>Clear</button>
-      </div>
-    </div>
+      </Box>
+      <Box>{id}</Box>
+    </Box>
   );
 };

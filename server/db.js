@@ -1,13 +1,13 @@
 import mongoose from "mongoose";
+import dotenv from "dotenv";
 
-const mongoCloud_url = "mongodb://localhost:27017/DrawIO";
+dotenv.config();
+
+const mongoCloud_url = process.env.DB_URL;
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(mongoCloud_url, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(mongoCloud_url);
     console.log("Mongodb connected successfully!🟢");
   } catch (e) {
     console.log("DB connection error!🔴");
